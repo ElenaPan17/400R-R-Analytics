@@ -1,0 +1,93 @@
+---
+output: pdf_document
+---
+
+
+\textbf{Homework 4}           
+\textbf{MSBA 400: Statistical Foundations for Data Analytics}   
+\textbf{Guangying Pan}        
+\bigskip
+
+### Part A
+**Use `sample` to select row numbers and then use these row numbers to divide your data into two parts. One part for estimation and one part for validation.**
+
+```{r}
+load("cat_buy.rda")
+str(cat_buy)
+```
+```{r}
+set.seed(123)
+ind.est=sample(1: nrow(cat_buy), size = nrow(cat_buy)/2)
+est_sample = cat_buy[ind.est,]    
+holdout_sample = cat_buy[-ind.est,]
+```
+
+### Part B
+**Fit a logistic regression model using the estimation sample produced in part A.  Eliminate insignificant variables. Discuss your final specification, do the signs of the coefficients make sense to you? Should you worry about multicollinearity in this dataset?**
+
+```{r}
+out <- glm(buytabw ~ ., data = est_sample, family = binomial)
+summary(out)
+```
+By examining the p-value for each feature, I find that only 'divsords' has a p-value of 0.78955, which is greater than 0.05. Therefore, I should eliminate it, as it is insignificant. 
+
+```{r}
+newout <- glm(buytabw ~ tabordrs + divwords + spgtabord + moslsdvs + moslsdvw + 
+                moslstab + orders, data = est_sample, family = binomial)
+summary(newout)
+```
+
+By examining the signs of each coefficient, I find that they all make sense except for 'orders.' For features like 'tabordrs,' 'divsords,' 'divwords,' and 'spgtabord,' a higher total of past orders correlates with a greater likelihood of the customer placing an order from the spring catalog, as indicated by positive coefficients. In contrast, 'moslsdvs,' 'moslsdvw,' and 'moslstab' suggest that a longer duration since the last order decreases the likelihood of placing a spring catalog order, hence their negative coefficients. However, I believe 'orders' should also have a positive coefficient, as more past orders likely increase the probability of a customer ordering from the spring catalog.
+
+```{r}
+#install.packages("ggplot2")
+#install.packages("reshape2")
+library(ggplot2)
+library(reshape2)
+
+correlation_matrix <- cor(est_sample)
+long_corr <- melt(correlation_matrix)
+
+ggplot(long_corr, aes(Var1, Var2, fill = value)) +
+    geom_tile() +
+    geom_text(aes(label = round(value, 2)), color = "black", size = 3) +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                         midpoint = 0, limit = c(-1,1)) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.text.y = element_text(angle = 45, hjust = 1))
+```
+
+From the heatmap above, we should be concerned about multicollinearity between 'spgtabord' and 'tabords', as their correlation is quite high, approximately 0.9. There is also a high correlation between 'orders' and 'tabordrs', as well as between 'orders' and 'divwords', with values of 0.78 and 0.77, respectively. We need to be cautious about these three pairs as they may exhibit multicollinearity."
+
+### Part C
+**Use the best-fit from part B to predict using the holdout sample. Plot boxplots of the fitted probabilities for each value of `buytabw` for the holdout sample (see code snippets from Chapter 7 for an example). Compute a "lift" table as done in Chapter 7 code snippets.**
+
+```{r}
+phat <- predict(newout, holdout_sample, type = "response")
+```
+
+```{r}
+boxplot(phat ~ holdout_sample$buytabw,
+        main = "Boxplot of Predicted Probabilities by Buytabw",
+        xlab = "Buytabw",
+        ylab = "Predicted Probabilities",
+        col = c("green", "red"))
+```
+
+```{r}
+deciles=cut(phat,breaks=quantile(phat,probs=c(seq(from=0,to=1,by=.1)))
+            ,include.lowest=TRUE)
+deciles=as.numeric(deciles)
+df=data.frame(deciles=deciles,phat=phat,default=holdout_sample$buytabw)
+lift=aggregate(df,by=list(deciles),FUN="mean",data=df)
+lift=lift[,c(2,4)]
+lift[,3]=lift[,2]/mean(holdout_sample$buytabw)
+names(lift)=c("decile","Mean Response","Lift Factor")
+lift
+```
+
+
+
+
+

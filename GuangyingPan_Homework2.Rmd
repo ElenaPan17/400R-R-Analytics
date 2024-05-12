@@ -1,0 +1,229 @@
+---
+output: pdf_document
+---
+
+
+\textbf{Homework 2}           
+\textbf{MSBA 400: Statistical Foundations for Data Analytics}   
+\textbf{Guangying Pan}        
+\bigskip
+
+### Question 1 Part A
+**In the class notes, we introduced the concept of $R^2$. Show that the formula $R^2=\frac{SSR}{SST}$ implies that $R^2$ is the square of the sample correlation coefficient between $X$ and $Y$, $r_{XY}$. Hint: recall from the notes how the fitted regression line can be expressed in terms of deviations from the mean.**
+
+$$
+\begin{aligned}
+  R^2=\frac{SSR}{SST}
+  &= \frac{\sum_{i=1}^n (\hat{Y_i} - \bar{Y})^2}{\sum_{i=1}^n (Y_i - \bar{Y})^2}\\
+  &= \frac{\sum_{i=1}^n (b_1(X_i - \bar{X}))^2}{\sum_{i=1}^n (Y_i - \bar{Y})^2}\\
+  &= \frac{(b_1)^2\sum_{i=1}^n (X_i - \bar{X})^2}{\sum_{i=1}^n (Y_i - \bar{Y})^2}\\
+  &= \frac{(r_{xy})^2 * \frac{(S_y)^2}{(S_x)^2} * \sum_{i=1}^n (X_i - \bar{X})^2}{\sum_{i=1}^n (Y_i - \bar{Y})^2}\\
+  &= (r_{xy})^2
+\end{aligned}
+$$
+
+### Question 1 Part B
+**In the class notes, we used intuition to argue the regression property, $corr(X,e)=0$. Show this directly results from the formula for $b_1$. Hint: substitute, $e_i = Y_i - b_0 - b_1X_i$ into $corr(X,e)$.**
+
+$$
+\begin{aligned}
+  b_1
+  &= \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}\\
+  b_1 * \sum_{i=1}^n (X_i - \bar{X})^2 &= \sum_{i=1}^n(X_i - \bar{X})(Y_i - \bar{Y})\\
+  b_1 * \sum_{i=1}^n (X_i - \bar{X})^2 &= \sum_{i=1}^n(X_i - \bar{X})(b_0 + b_1X_i + e_i - \bar{Y})\\
+  b_1 * \sum_{i=1}^n (X_i - \bar{X})^2 &= \sum_{i=1}^n(X_i - \bar{X})e_i + \sum_{i=1}^n(X_i - \bar{X})(\bar{Y} - b_1\bar{X} + b_1X_i- \bar{Y})\\
+  b_1 * \sum_{i=1}^n (X_i - \bar{X})^2 &= \sum_{i=1}^n(X_i - \bar{X})e_i + \sum_{i=1}^nb_1(X_i - \bar{X})^2\\
+  \sum_{i=1}^n(X_i - \bar{X})e_i &= 0
+\end{aligned}
+$$
+$$
+\begin{aligned} 
+  corr(X,e)  
+  &= \frac{\sum_{i=1}^n(X_i - \bar{X})(e_i - \bar{e})}{\sqrt{\sum_{i=1}^n(X_i - \bar{X})^2} \sqrt{\sum_{i=1}^n(e_i - \bar{e})^2}} \\
+  &= \frac{\sum_{i=1}^n(X_i - \bar{X})e_i - \sum_{i=1}^n(X_i - \bar{X})\bar{e}}{\sqrt{\sum_{i=1}^n(X_i - \bar{X})^2} \sqrt{\sum_{i=1}^n(e_i - \bar{e})^2}} \\
+  &= \frac{0-0}{\sqrt{\sum_{i=1}^n(X_i - \bar{X})^2} \sqrt{\sum_{i=1}^n(e_i - \bar{e})^2}} \\
+  &= 0
+\end{aligned}
+$$
+
+### Question 2 Part A
+**Display a histogram of the conditional distribution of emv given that luxury is in the interval (.2, .3) in the cars dataset (from problem set 1)**
+
+```{r}
+library(DataAnalytics)
+data("mvehicles")
+cars=mvehicles[mvehicles$bodytype != "Truck",]
+conditional_luxury <- cars[cars$luxury >= 0.2 & cars$luxury <= 0.3, ]
+hist(conditional_luxury$emv, main = paste("Histogram of Conditional Distribution"), 
+     xlab = 'emv')
+```
+
+### Question 2 Part B
+**Compute the mean of the conditional distribution in part A and compute a prediction interval that takes up 95% of the data (an interval that stretches from the .025 quantile (2.5 percentile) to the .975 (97.5 percentile)). Use the `quantile()` command.**
+
+```{r}
+mean <- mean(conditional_luxury$emv)
+mean
+
+prediction_interval <- quantile(conditional_luxury$emv, probs = c(0.025, 0.975))
+prediction_interval
+```
+
+### Question 2 Part C
+**Repeat part A and B for a much higher level of luxury, namely the interval (.7,.8).  Describe the difference between these two conditional distributions.**
+
+```{r}
+conditional_luxury_2 <- cars[cars$luxury >= 0.7 & cars$luxury <= 0.8, ]
+hist(conditional_luxury_2$emv, main = paste("Histogram of Conditional Distribution"), 
+     xlab = 'emv')
+
+mean <- mean(conditional_luxury_2$emv)
+mean
+
+prediction_interval <- quantile(conditional_luxury_2$emv, probs = c(0.025, 0.975))
+prediction_interval
+```
+Part (c) has a wider prediction interval of [14699.09, 38632.34] compared to Part (b) with [34254.33, 179179.22]. Furthermore, the conditional distribution of emv, where luxury falls within the interval  (0.7, 0.8), exhibits a more right-skewed distribution with a larger mean. 
+
+### Question 2 Part D
+**Explain why the results of part B and C show that luxury is probably (by itself) not sufficiently informative to give highly accurate predictions of `emv`.**
+
+Because both the results of parts B and C have wide prediction intervals, which means the range of potential values for emv is also quite broad. Therefore, it shows that luxury by itself is probably not sufficiently informative for making accurate predictions of emv. 
+
+### Question 3 Part A
+**Use the `detergent` dataset to determine the price elasticity of demand for 128 oz Tide.  Compute the 90 percent confidence interval for this elasticity.**
+
+```{r}
+library(DataAnalytics)
+data("detergent")
+loglm_model <- lm(log(detergent$q_tide128)~log(detergent$p_tide128))
+summary(loglm_model)
+confint(loglm_model, level = 0.9)
+```
+
+The price elasticity of demand for 128 oz Tide is -4.41205 and the 90% confidence interval for the price elasticity of demand for 128 oz Tide is [-4.518186, -4.305912].
+
+### Question 3 Part B
+**One simple rule of pricing is the “inverse elasticity” rule that the optimal gross margin should be equal to the reciprocal of the absolute value of the price elasticity, i.e. $\text{Gross Margin}=\frac {1}{|elasticity|}$. For example, suppose we estimate that the price elasticity is -2 (a 1 per cent increase in price will reduce sales (in units) by 2 per cent. Then the optimal gross margin is 50 percent.** 
+
+**Suppose this retailer is earning a 25 per cent gross margin on 128 oz Tide. Perform appropriate hypothesis test to check if the retailer is pricing optimally at the 90 per cent confidence level?**
+
+According to the "inverse elasticity" rule, suppose this retailer is earning a 25 per cent gross margin on 128 oz Tide, then the price elasticity is an absolute value of 4. However, neither 4 or -4 falls within the 90 percent confidence interval for the price elasticity of demand for 128 oz Tide. Therefore, we reject the null hypothesis that the retailer is pricing optimally at the 90% CI.
+
+### Question 4 Part A
+**Write your own function in `R` (using `function()`) to simulate from a simple regression model. This function should accept as inputs: $b_0$ (intercept), $b_1$ (slope), $X$ (a vector of values), and $\sigma$ (error standard deviation). You will need to use `rnorm()` to simulate errors from the normal distribution. The function should return a vector of $Y$ values.**
+
+```{r}
+simulate_regression <- 
+  function(b_0, b_1, X, sigma)
+  {errors <- rnorm(length(X), mean = 0, sd = sigma)
+  Y <- b_0 + b_1 * X + errors
+  return (Y)}
+```
+
+### Question 4 Part B
+**Simulate $Y$ values from your function and make a scatterplot of $X$ versus simulated $Y$. When simulating, use the `vwretd` data from the `marketRf` dataset as the $X$ vector, and choose $b_0=1$, $b_1=20$, and $\sigma=1$. Then add the fitted regression line to the plot as well as the true conditional mean line (the function `abline()` may be helpful).**
+
+```{r}
+library(DataAnalytics)
+data("marketRf")
+X <- marketRf$vwretd
+b_0 <- 1
+b_1 <- 20
+sigma <- 1
+
+Y_hat <- simulate_regression(b_0, b_1, X, sigma)
+
+plot(X, Y_hat, col = "blue", pch = 20, main = "Scatterplot of X v.s. simulated Y")
+
+# fitted regression line
+abline(lm(Y_hat~X)$coef, lwd = 2, col = "red")
+
+# true condition mean line
+abline(a = 1, b = 20, lwd = 2, col = "green")
+```
+
+### Question 5 Part A
+**Assume $Y = \beta_0 + \beta_1X + \varepsilon$ with $\varepsilon \sim \mathcal{N}(0,\sigma^2)$. Let $\beta_0 = 2$, $\beta_1 = 0.6$, and $\sigma^2 = 2$. You can make $X$ whatever you like, for example you could simulate X from a uniform distribution**
+**Use your `R` function from question 4 to simulate the sampling distribution of the slope. Use a sample size of $N=300$ and calculate $b_0$ \& $b_1$ for 10,000 samples. Plot a histogram of the sampling distribution of $b_0$.**
+
+```{r}
+b_0 <- 2
+b_1 <- 0.6
+sigma <- sqrt(2)
+
+N <- 300
+n <- 10000
+X <- runif(N)
+b0 <- numeric(n)
+b1 <- numeric(n)
+
+# b0
+for (i in 1:n)
+{Y_hat <- simulate_regression(b_0, b_1, X, sigma)
+lm_model <- lm(Y_hat ~ X)
+b0[i] <- lm_model$coefficients[1]
+b1[i] <- lm_model$coefficients[2]}
+
+hist(b0, main = paste("Histogram of Sampling Distribution of b_0"), xlab = 'b_0')
+```
+
+### Question 5 Part B
+**Calculate the empirical value for E[b_1] from your simulation and provide the theoretical value for E[b_1]. Compare the simulated and theoretical values.**
+
+```{r}
+empirical <- mean(b1)
+empirical
+
+theoretical <- b_1
+theoretical
+```
+
+The empirical value and theoretical value for E[b_1] are quite close.
+
+### Question 5 Part C
+**Calculate the empirical value for var(b_1) from your simulation and provide the theoretical value for var(b_1). Compare the simulated and theoretical values.**
+
+```{r}
+empirical_v <- var(b1)
+empirical_v
+
+
+X_mean <- mean(X)
+theoretical_v <- sigma^2 / sum((X - X_mean)^2)
+theoretical_v
+```
+
+The empirical value and theoretical value for var(b_1) are also quite close.
+
+### Question 6 Part A
+**What is a standard error (of a sample statistic or an estimator)? How is a standard error different from a standard deviation?**
+
+The standard error indicates how much the sample statistic is likely to vary from one sample to another when taking multiple random samples from the same population. Additionally, the standard error determines the width of prediction intervals, which measures the variability of the sample statistic from the population parameter. On the other hand, standard deviation describes the variation in a set of data points. The standard error is an estimation of the standard deviation.
+
+### Question 6 Part B
+**What is sampling error? How does the standard error capture sampling error?**
+
+Sampling error shows the difference between the true value and the fitted value, calcluated as $E[Y|X] - \hat{Y}$. Since the standard error measures the variability of the sample statistic from the population parameter, it can capture the sampling error. 
+
+### Question 6 Part C
+**Your friend Steven is working as a data analyst and comes to you with some output from some statistical method that you’ve never heard of. Steven tells you that the output has both parameter estimates and standard errors. He then asks, “how do I interpret and use the standard errors?” What do you say to Steven to help him even though you don’t know what model is involved?**
+
+The standard error indicates how much the sample statistic is likely to vary from one sample to another when taking multiple random samples from the same population. Additionally, the standard error determines the width of prediction intervals, which measures the variability of the sample statistic from the population parameter.
+
+I would suggest that Steven construct the confidence interval using parameter estimates and standard errors, with the formula: parameter estimates ± (critical value * standard error). By doing this, Steven can gain a better understanding of the potential range within which the true value may lie with a certain level of confidence. When interpreting the results, it is important to note that a smaller standard error or a narrower confidence interval indicates more accurate and precise prediction results.
+
+### Question 6 Part D
+**Your friend Xingua works with Steven. She also needs help with her statistical model. Her output reports a test statistic and the p-value. Xingua has a Null Hypothesis and a significance level in mind, but she asks ``how do I interpret and use this output?''  What do you say to Xingua to help her even though you don't know what model is involved?**
+
+Test statistics measure how far the observed data is from the expected value under the null hypothesis, and the p-value is the probability associated with the test statistic
+
+I would suggest that Xingua compare the p-value with the siginificance level ($\alpha$). If the p-value is less than or equal to $\alpha$, then Xingua should reject the null hypothesis because it indicates strong evidence against the null hypothesis. On the other hand, if the p-value is greater than $\alpha$, then Xingua should fail to reject the null hypothesis.
+
+
+
+
+
+
+
+

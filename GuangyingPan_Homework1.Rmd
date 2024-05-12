@@ -1,0 +1,232 @@
+---
+output: pdf_document
+---
+
+
+\textbf{Homework 1}           
+\textbf{MSBA 400: Statistical Foundations for Data Analytics}   
+\textbf{Guangying Pan}        
+\bigskip
+
+### Question 1
+**Review the basics of summation notation and covariance formulas. Show that:**
+
+a. $\sum_{i=1}^n (Y_i - \bar{Y}) = 0$
+$$
+\begin{aligned}
+  \sum_{i=1}^n (Y_i - \bar{Y}) &= \sum_{i=1}^N Y_i - N*\bar{Y}\\
+  &= \sum_{i=1}^N Y_i - N*(\frac{1}{N} \sum_{i=1}^N Y_i)\\
+  &= \sum_{i=1}^N Y_i - \sum_{i=1}^N Y_i\\
+  &= 0
+\end{aligned}
+$$
+
+b. $\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y}) = \sum_{i=1}^n (X_i - \bar{X})Y_i$
+$$
+\begin{aligned}
+  \sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y}) 
+  &= \sum_{i=1}^n (X_i - \bar{X})Y_i - \sum_{i=1}^n(X_i - \bar{X})\bar{Y}\\
+  &= \sum_{i=1}^n (X_i - \bar{X})Y_i - (\sum_{i=1}^n X_i\bar{Y} - N*\bar{X}\bar{Y})\\
+  &= \sum_{i=1}^n (X_i - \bar{X})Y_i - (\sum_{i=1}^n X_i\bar{Y} - N*(\frac{1}{N} \sum_{i=1}^N X_i)\bar{Y})\\
+  &= \sum_{i=1}^n (X_i - \bar{X})Y_i
+\end{aligned}
+$$
+
+### Question 2
+**Define both and explain the difference between (a) the expectation of a random variable and (b) the sample average?**
+
+**Expectation of a random variable** is the expected value or the average of all possible values in a given population, weighted by the probability of occurrence of each of the values.
+
+**Sample average** is the mean of a set of observed values in a random sample drawn from a population. Formula: $\bar{Y} = \frac{1}{N}\sum_{i=1}^n Y_i$
+
+The difference between the two is that we cannot directly learn the true expected value of a random variable, but the sample average provides an estimate of this true expectation of the random variable. As the sample size (N) becomes large enough, the sample average tends to converge to the true expectation of the random variable.
+
+### Question 3
+**a. Describe the Central Limit Theorem as simply as you can.**
+
+As the sample size N goes to infinity, the sampling distribution of the sample mean $\bar{Y}$ converges to a normal distribution with a mean of $\mu_Y$ and a variance of $\sigma_Y^2/N$ when random variables are not too different.
+
+**b. Let $X \sim \textrm{Gamma}(\alpha=2,\ \beta=2)$. For the Gamma distribution, $\alpha$ is often called the "shape" parameter, $\beta$ is often called the "scale" parameter, and the $\mathbb{E}[X]=\alpha\beta$. Plot the density of $X$ and describe what you see.**
+
+```{r}
+alpha <- 2
+beta <- 2 
+curve(dgamma(x, shape = alpha, rate = 1/beta), from = 0, to = 30, xlab = "X", 
+      ylab = "Probability Density", main = "Gamma Density of X ~ Gamma(2,2)")
+```
+The density of X is a unimodal and right-skewed distribution. As X increases, the probability density initially rises and then sharply decrease. As X approaches infinity, the probability density approaches 0.
+
+**c. Let $n$ be the number of draws from that distribution in one sample and $r$ be the number of times we repeat the process of sampling from that distribution. Draw an iid sample of size $n=10$ from the Gamma(2,2) distribution and calculate the sample average; call this $\bar{X}_n^{(1)}$. Repeat this process $r$ times where $r=1000$ so that you have $\bar{X}_n^{(1)}, \dots, \bar{X}_n^{(r)}$. Plot a histogram of these $r$ values and describe what you see. This is the sampling distribution of $\bar{X}_{(n)}$.**
+
+```{r}
+n <- 10
+r <- 1000
+sample_means <- numeric(r)
+for (i in 1:r) {
+  sample <- rgamma(n, shape = alpha, scale = beta)
+  sample_means[i] <- mean(sample)
+}
+
+hist(sample_means, breaks = 50, main = paste("Histogram of Sampling Distribution"), 
+     xlab = expression(bar(x)[n]), ylab = "frequency")
+```
+The histogram of the sampling distribution of $\bar{X}_{(n)}$ resembles a bell-shaped curve. And it is a right-skewed distribution with a longer tail on the right. 
+
+**d. Repeat part (c) but with $n=100$.  Be sure to produce and describe the histogram. Explain how this illustrates the CLT at work.**
+
+```{r}
+n <- 100
+r <- 1000
+sample_means <- numeric(r)
+for (i in 1:r) {
+  sample <- rgamma(n, shape = alpha, scale = beta)
+  sample_means[i] <- mean(sample)
+}
+
+hist(sample_means, breaks = 50, main = paste("Histogram of Sampling Distribution"), 
+     xlab = expression(bar(x)[n]), ylab = "frequency")
+```
+As n increases from 10 to 100, the sampling distribution of $\bar{X}_{(n)}$ approximates a normal distribution more closely, and the sample mean becomes closer to the population mean, $\mathbb{E}[X]=\alpha\beta = 4$, in accordance with the Central Limit Theorem. 
+
+### Question 4
+**The normal distribution is often said to have "thin tails" relative to other distributions like the $t$-distribution. Use random number generation in R to illustrate that a $\mathcal{N}(0,1)$ distribution has much thinner tails than a $t$-distribution with 5 degrees of freedom.**
+
+```{r}
+hist(rnorm(n = 1000, mean = 0, sd = 1), breaks = 50, xlim=c(-5,5), ylim = c(0,100), 
+     col = "red", main = paste("Histogram"), xlab = "x", plot = TRUE)
+hist(rt(n = 1000, df = 5), breaks = 50, xlim=c(-5,5), ylim = c(0,100), 
+     col=scales::alpha("blue",0.5), plot = TRUE, add = TRUE)
+```
+
+### Question 5
+**a. From the Vanguard dataset, compute the standard error of the mean for the `VFIAX` index fund return.**
+
+```{r}
+library(DataAnalytics)
+data("Vanguard")
+
+VFIAX = Vanguard[Vanguard$ticker == "VFIAX", ]
+VFIAX_return = VFIAX[ , c(1, 2, 5)]
+
+library(DataAnalytics)
+descStat(VFIAX_return)
+
+mean(VFIAX_return$mret)
+Standard_Error_Mean <- sd(VFIAX_return$mret)/sqrt(nrow(VFIAX_return))
+Standard_Error_Mean
+```
+The standard error of the mean for the VFIAX index fund return is 0.003670128.
+
+**b.  For this fund, the mean and the standard error of the mean are almost exactly the same. Why is this a problem for a financial analyst who wants to assess the performance of this fund?**
+
+The standard error of the mean is a measure of the variability in the sample mean. If mean and the standard error of the mean are almost exactly the same, it indicates that the standard deviation, in terms of variability, is really high. Therefore, it is challenging for a financial analyst to use the calculated mean as the estimation of the true population mean (fund's return), which may lead to incorrect investment decisions.
+
+**c.  Calculate the size of the sample which would be required to reduce the standard error of the mean to 1/10th of the size of the mean return.**
+```{r}
+ceiling((sd(VFIAX_return$mret)/(1/10*mean(VFIAX_return$mret)))^2)
+```
+
+### Question 6: Subsetting Observations
+**Part A**
+**1. Display the contents of the first 50 elements of the vector, `cars$make == "Ford"`, to verify that it is a logical vector.**
+
+```{r}
+library(DataAnalytics)
+data("mvehicles")
+cars=mvehicles[mvehicles$bodytype != "Truck",]
+head(cars$make == "Ford", n = 50)
+```
+
+**2. Subset the `cars` data frame by a two step process to only the "Ford" make.  That is, create the row selection logical vector in one statement and select observations from the `cars` data frame in the second.**
+
+```{r}
+logic = cars$make == "Ford"
+fords = cars[logic, ]
+fords
+```
+
+**3. How many Kia observations are there in the `cars` data frame? hint: `nrow()` tells you how many rows are in a data frame.**
+
+```{r}
+Kia = cars[cars$make == "Kia", ]
+nrow(Kia)
+```
+
+**4. How many cars are have a price (emv) that is greater than $100,000?**
+```{r}
+price = cars[cars$emv > 100000, ]
+nrow(price)
+```
+
+**Part B**
+**1. What is the average sales for all cars made in Europe with price above $75,000?**
+
+```{r}
+Europ_price = cars[cars$emv > 75000 & cars$origin == "Europe", ]
+sum(Europ_price$sales)/nrow(Europ_price)
+```
+
+**Part C**
+**1. How many four door vehicles are in cars?**
+```{r}
+four_door = cars[grepl("4dr", cars$style,ignore.case=TRUE), ]
+nrow(four_door)
+```
+
+**2. How many four door sedans are in cars?**
+```{r}
+sedans = four_door[grepl("Sedan",four_door$bodytype,ignore.case=TRUE), ]
+nrow(sedans)
+```
+
+### Question 7 : Sales and Price relationships
+**Q7, part A**
+**Plot price (horizontal axis) vs. sales (vertical axis) for cars with bodytype == “Sedan”. What is the problem with displaying the data in this manner?**
+
+```{r}
+Sedan = cars[cars$bodytype == "Sedan", ]
+plot(Sedan$emv, Sedan$sales, pch = 20, col = "blue", xlab = "price", ylab = "sales")
+```
+Most of the data points are centered at the lower left or bottom because there are a few outliers. The majority of data points have sales below 50,000, but two data points have sales near 150,000.
+
+**Q7, part B**
+**Plot log(price) vs. log(sales) for the same subset of observations as in part 1. How has this improved the visualization of this data? Are there any disadvantages of taking the log transformation? A very similar but less “violent” tranformation is the sqrt transformation. Try the sqrt transformation. Is this useful?**
+
+```{r}
+plot(log(Sedan$emv), log(Sedan$sales), pch = 20, col = "blue", xlab = "log(price)", 
+     ylab = "log(sales)")
+```
+The log plot in part (b) is better than part (a) since there are no significant outliers, more suitable y range, and the data points are evenly distributed. However, after applying the log transformation, it becomes challenging for people to discern any substantial relationship between log(price) and log(sales). 
+
+```{r}
+plot(sqrt(Sedan$emv), sqrt(Sedan$sales), pch = 20, col = "blue", xlab = "sqrt(price)", 
+     ylab = "sqrt(sales)")
+```
+The sqrt transformation appears to be more useful than the log transformation as it is less likely to severely distort the data and reduces the impact of outliers. Additionally, because the sqrt transformation is closer to the original scale, it is easier to discern the relationship between sqrt(price) and sqrt(sales).
+
+**Q7, part C**
+**Economists will tell you that as price increase sales will decreases, all other things being equal. Does this plot support this conclusion?**
+
+In the plot of the log transformation, it is challenging to discern a clear relationship between increasing prices and decreasing sales because all data points are evenly distributed. Thus, the plot does not support this conclusion. Similarly, in the sqrt transformation plot, the data points are clustered in the lower-left corner, and as the square root of price increases, the square root of sales does not consistently decrease. Consequently, this plot also fails to support the argument
+
+**Q7, part D**
+**Fit a regression model to this data. That is, "regress" log(sales) on log(price) (log(sales) is Y or the dependent variable). Plot the fitted line on top of the scatterplot using `abline`.**
+
+```{r}
+lmmodel = lm(log(sales)~log(emv), data = Sedan)
+plot(log(Sedan$emv), log(Sedan$sales), pch = 20, col = "blue", xlab = "log(price)", 
+     ylab = "log(sales)")
+abline(lmmodel$coef, lwd = 2, col = "red")
+```
+**Q7, part E**
+**Predict sales for price = $45,000 using the model fit in part D). Don't forget to transform back to unit sales by using the `exp()` function.**
+
+```{r}
+exp(predict(lmmodel, new = data.frame(emv = 45000)))
+```
+When price = 45,000, sales is approximately 940 cars. 
+
+
+
+
+

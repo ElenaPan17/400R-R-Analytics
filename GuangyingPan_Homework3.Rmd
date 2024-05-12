@@ -1,0 +1,138 @@
+---
+output: pdf_document
+---
+
+
+\textbf{Homework 3}           
+\textbf{MSBA 400: Statistical Foundations for Data Analytics}   
+\textbf{Guangying Pan}        
+\bigskip
+
+### Question 1 : Prediction from Multiple Regressions
+### Q1, part A
+**Run the multiple regression of `Sales` on `p1` and `p2` using the dataset, `multi`.**
+
+```{r}
+library(DataAnalytics)
+data("multi")
+mlm = lm(formula = Sales ~ p1 + p2, data = multi)
+summary(mlm)
+```
+### Q1, part B
+**Suppose we wish to use the regression from part A to estimate sales of this firm's product with, `p1` = $7.5.  To make predictions from the multiple regression, we will have to predict what p2 will be given that `p1` =$7.5.**    
+
+**Explain why setting `p2=mean(p2)` would be a bad choice. Be specific and comment on why this is true for this particular case (value of `p1).**
+
+```{r}
+cor(multi$p1, multi$p2)
+```
+
+From the correlation, I can tell p1 and p2 are correlated. Therefore, instead of taking the mean to predict p2, I would suggest using p1 information to predict p2. I can use a regression between p2 and p1 and apply the least squares method to get: p2 = c0 + c1*p1. Then, I can input the p1 value to predict p2 (see Q1 part 3). 
+
+### Q1, part C
+**Use a regression of `p2` on `p1` to predict what `p2` would be given that `p1` = $7.5.**
+
+```{r}
+lm = lm(formula = p2 ~ p1, data = multi)
+predict_p2 = predict(lm, new = data.frame(p1 = 7.5))
+predict_p2
+```
+
+### Q1, part D
+**Use the predicted value of `p2` from part C, to predict `Sales`.  Show that this is the same predicted value of sales as you would get from the simple regression of `Sales` on `p1`.  Explain why this must be true.**
+
+```{r}
+predict_sales_mlr = predict(mlm, new = data.frame(p1 = 7.5, p2 = predict_p2))
+predict_sales_mlr
+
+slm = lm(formula = Sales ~ p1, data = multi)
+predict_sales_slr = predict(slm, new = data.frame(p1 = 7.5))
+predict_sales_slr
+```
+The results are the same. This is because from part (C), I have p2 = c0 + c1p1, which can transform Sales = a0 + a1p1 + a2p2 into Sales = a0 + a1p1 + a2(c0+c1p1) = a0+a2c0 + (a1 + a2c1)p1. By simply regressing Sales over p1, I got Sales = d0 + d1p1. Therefore, it implies that a0+a2c0 = d0 and a1 + a2c1 = d1. Therefore, adding p2 would not add variation into the prediction of Sales, in terms of the predicted value of Sales would be the same.
+
+### Question 2: Interactions
+### Q2, part A
+**Compute the change in `emv` we would expect to see if sporty increased by .1 units, holding luxury constant at .30 units**
+```{r}
+library(DataAnalytics)
+data("mvehicles")
+cars=mvehicles[mvehicles$bodytype != "Truck",]
+model2 = lm(formula = log(emv) ~ luxury + sporty + luxury * sporty, data = cars)
+b2 = model2$coef[3]
+b2
+b3 = model2$coef[4]
+b3
+```
+```{r}
+X2 = 0.3
+change_emv = b2 + b3 * X2
+exp(change_emv*0.1)
+```
+
+### Q2, part B
+**Compute the change in `emv` we would expect to see if sporty was increased by .1 units, holding luxury constant at .70 units.**
+
+```{r}
+X2 = 0.7
+change_emv = b2 + b3 * X2
+exp(change_emv*0.1)
+```
+
+### Q2, part C
+**Why are the answers different in part A and part B?  Does the interaction term make intuitive sense to you? Why?**
+
+The answers are different in part A and B is because the effect of sporty is not a constant, but depends on the change of luxury (0.3 v.s. 0.7). The interaction term makes sense to me because the effect of luxury on emv depends on the level of sporty. For example, a luxury car may have different effects on market value at different levels of sporty.
+
+### Question 3: More on ggplot2 and regression planes
+**1. Use ggplot2 to visualize the relationship between price and carat and cut. 'price' is the dependent variable. Consider both the log() and sqrt() transformation of price. **
+```{r}
+library(ggplot2)
+library(dplyr)
+data(diamonds)
+cutf = as.character(diamonds$cut)
+cutf = as.factor(cutf)
+
+# log(price)
+ggplot(diamonds, aes(x=carat, y=log(price), color=cutf)) + 
+  labs(title = "Relationship between Log(Price), Carat, and Cut of Diamonds",
+       x = "Carat",
+       y = "Log(Price)") + geom_point()
+
+# sqrt(price)
+ggplot(diamonds, aes(x=carat, y=sqrt(price), color=cutf)) + 
+  labs(title = "Relationship between Sqrt(Price), Carat, and Cut of Diamonds",
+       x = "Carat",
+       y = "Sqrt(Price)")+ geom_point()
+```
+**2. Run a regression of your preferred specification.  Perform residual diagnostics. What do you conclude from your regression diagnostic plots of residuals vs. fitted and residuals vs. carat? **
+
+```{r}
+ml = lm(log(price)~carat+cutf, data = diamonds)
+e = ml$residuals
+
+ggplot(diamonds, aes(x=fitted(ml), y=e)) + 
+  labs(title = "Relationship between fitted value and Residuals",
+       x = "Fitted Values",
+       y = "Residuals") + geom_point()
+
+ggplot(diamonds, aes(x=carat, y=e)) + 
+  labs(title = "Relationship between Carat and Residuals",
+       x = "Carat",
+       y = "Residuals") + geom_point()
+
+```
+Both regression diagnostic plots exhibit a negative relationship between fitted values and residuals, as well as between carat and residuals. In linear regression, the assumption is that the correlation between the independent variable X (or fitted value Y) and residuals should be 0. Therefore, the observed pattern indicates a violation of this assumption, specifically concerning homoscedasticity.
+
+
+
+
+
+
+
+
+
+
+
+
+
